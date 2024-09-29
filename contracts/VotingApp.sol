@@ -32,6 +32,8 @@ contract VotingApp {
 
     constructor() {
         admin = msg.sender;
+        matters.push(Matter(0, "Initial matter", 0));
+        matters.push(Matter(1, "Second matter", 0)); // Add a second matter for testing
     }
 
     function registerVoter(address _voterAddress) public {

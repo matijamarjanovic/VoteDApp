@@ -1,101 +1,100 @@
-import Image from "next/image";
+'use client';
+
+import type { AppProps } from 'next/app';
+import Navbar from "@/app/components/Navbar";
+import { useEffect, useState } from "react";
+import { JsonRpcProvider } from 'ethers';
+import { getContractHardhat } from "../../utils/ethers";
+
+class Matter {
+    id: number;
+    description: string;
+    proposalCount: number;
+
+    constructor(id: number, description: string, proposalCount: number) {
+        this.id = id;
+        this.description = description;
+        this.proposalCount = proposalCount;
+    }
+}
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="https://nextjs.org/icons/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+    const [matters, setMatters] = useState<Matter[]>([]);
+    const [account, setAccount] = useState<string | null>(null);
+    const [contract, setContract] = useState<any | null>(null);
+    const [loading, setLoading] = useState<boolean>(true);
+    const [error, setError] = useState<string | null>(null);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="https://nextjs.org/icons/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+    async function connectToHardhat() {
+        try {
+            // Create a JSON-RPC provider to connect to Hardhat node
+            const provider = new JsonRpcProvider('http://127.0.0.1:8545');
+
+            // Use a known Hardhat account (address 0) for testing
+            const hardhatAccount = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"; // Replace with one of Hardhat's default addresses
+
+            // Set the connected account
+            setAccount(hardhatAccount);
+            setContract(await getContractHardhat());
+
+
+            // Fetch matters after connecting
+            await fetchMatters();
+        } catch (error) {
+            console.error('Error connecting to Hardhat node:', error);
+            setError("Failed to connect to Hardhat node.");
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    async function fetchMatters() {
+        if (contract) {
+            try {
+                const mattersCount = await contract.getMattersCount();
+                const fetchedMatters: Matter[] = [];
+
+                for (let i = 0; i < mattersCount; i++) {
+                    const matter = await contract.getMatterById(i);
+                    fetchedMatters.push(new Matter(matter.id, matter.description, matter.proposalsCount));
+                }
+
+                setMatters(fetchedMatters);
+            } catch (error) {
+                console.error('Error fetching matters:', error);
+                setError("Failed to fetch matters.");
+            }
+        }
+    }
+
+    useEffect(() => {
+        connectToHardhat();
+        //connectToWeb3();
+
+    }, [account, contract]);
+    return (
+        <div className="min-h-screen bg-gray-500">
+            <Navbar />
+            <div className="container mx-auto py-10">
+                <h1 className="text-4xl font-bold text-center mb-8 text-dark">Matters to Vote On</h1>
+                {loading ? (
+                    <div className="text-center text-lg text-dark">Loading matters...</div>
+                ) : error ? (
+                    <div className="text-red-500 text-center text-lg text-dark">{error}</div>
+                ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                        {matters.map((matter) => (
+                            <div key={matter.id} className="p-6 rounded-lg shadow-lg transition-transform bg-gray-700 transform hover:scale-105">
+                                <h2 className="text-xl font-semibold text-dark">{matter.description}</h2>
+                                <p className="mt-2 text-dark">Proposals Count: {matter.proposalCount}</p>
+                                <button className="mt-4 bg-blue-600 text-dark px-4 py-2 rounded-md hover:bg-blue-700 transition duration-200">
+                                    View Proposals
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
-  );
+    );
 }

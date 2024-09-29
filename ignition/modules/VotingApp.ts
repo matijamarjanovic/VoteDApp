@@ -1,8 +1,8 @@
 import { buildModule } from "@nomicfoundation/hardhat-ignition/modules";
 
-const VotingAppModule = buildModule("LockModule", (m) => {
+const VotingAppModule = buildModule("VotingApp2", (m) => {
 
-    const vapp = m.contract("VotingAppModule", [], {
+    const vapp = m.contract("VotingApp", [], {
     });
 
     return { vapp };
