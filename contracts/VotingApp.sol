@@ -22,7 +22,7 @@ contract VotingApp {
 
     address public admin;
     mapping(address => Voter) public voters;
-    mapping(uint => Proposal) public proposals; //proposalId => Proposal
+    mapping(uint => Proposal[]) public matterProposals; //matterId => Proposal[]
     uint public totalProposalCount = 0;
     Matter[] public matters;
 
@@ -43,55 +43,61 @@ contract VotingApp {
         emit VoterRegistered(_voterAddress);
     }
 
-    function registerProposal(uint _matterId, string memory _description) public {
-        require(voters[msg.sender].isRegistered, "Only registered voters can register a proposal");
-
-        proposals[totalProposalCount] = Proposal(totalProposalCount, _description, 0, _matterId);
-        matters[_matterId].proposalsCount++;
-        totalProposalCount++;
-
-        emit ProposalRegistered(matters[_matterId].proposalsCount);
-    }
-
     function registerMatter(string memory _description) public {
-        require(voters[msg.sender].isRegistered, "Only registered voters can register a matter");
+        require(voters[msg.sender].isRegistered || msg.sender == admin, "Only registered voters can register a matter");
 
         matters.push(Matter(matters.length, _description, 0));
     }
 
-    function vote(uint _proposalId) public {
+    function registerProposal(uint _matterId, string memory _description) public {
+        require(voters[msg.sender].isRegistered || msg.sender == admin, "Only registered voters can register a proposal");
+        require(_matterId < matters.length, "Matter does not exist"); // Ensure the matter exists
+
+        Proposal memory newProposal = Proposal(matterProposals[_matterId].length, _description, 0, _matterId);
+        matterProposals[_matterId].push(newProposal);
+        matters[_matterId].proposalsCount++;
+        totalProposalCount++;
+
+        emit ProposalRegistered(newProposal.id);
+    }
+
+
+    function vote(uint _matterId, uint _proposalId) public {
         require(voters[msg.sender].isRegistered, "Only registered voters can vote");
+        require(!voters[msg.sender].hasVoted[_matterId], "The voter has already voted on this matter");
 
-        uint mtrID = proposals[_proposalId].matterId;
-        require(!voters[msg.sender].hasVoted[mtrID], "The voter has already voted for this proposal");
+        voters[msg.sender].hasVoted[_matterId] = true;
 
-        voters[msg.sender].hasVoted[mtrID] = true;
+        matterProposals[_matterId][_proposalId].voteCount++;
+        totalProposalCount++;
 
-        proposals[_proposalId].voteCount++;
-
-        emit Voted(msg.sender, _proposalId, mtrID);
+        emit Voted(msg.sender, _proposalId, _matterId);
     }
 
     function getWinningProposal(uint _matterId) public view returns (uint) {
         uint winningProposalId = 0;
         uint winningVoteCount = 0;
 
-        for (uint i = 0; i < matters[_matterId].proposalsCount; i++) {
-            if (proposals[i].voteCount > winningVoteCount) {
-                winningProposalId = i;
-                winningVoteCount = proposals[i].voteCount;
+        Proposal[] storage proposalsForMatter = matterProposals[_matterId]; // Use storage instead of memory
+
+        for (uint i = 0; i < proposalsForMatter.length; i++) {
+            if (proposalsForMatter[i].voteCount > winningVoteCount) {
+                winningProposalId = proposalsForMatter[i].id;
+                winningVoteCount = proposalsForMatter[i].voteCount;
             }
         }
 
         return winningProposalId;
     }
 
+
+
     function getMattersCount() public view returns (uint) {
         return matters.length;
     }
 
     function getProposalById(uint _matterId, uint _proposalId) public view returns (Proposal memory) {
-        return proposals[_proposalId];
+        return matterProposals[_matterId][_proposalId];
     }
 
     function getMatterById(uint _matterId) public view returns (Matter memory) {
@@ -102,8 +108,8 @@ contract VotingApp {
         return totalProposalCount;
     }
 
-    function getProposalVoteCount(uint _proposalId) public view returns (uint) {
-        return proposals[_proposalId].voteCount;
+    function getProposalVoteCount(uint _matterId, uint _proposalId) public view returns (uint) {
+        return matterProposals[_matterId][_proposalId].voteCount;
     }
 
 
