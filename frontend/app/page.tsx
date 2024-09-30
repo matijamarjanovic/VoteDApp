@@ -24,6 +24,8 @@ export default function Home() {
     const [contract, setContract] = useState<any | null>(null);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
+    const [searchQuery, setSearchQuery] = useState<string>(''); // New state for search query
+
 
     async function connectToHardhat() {
         try {
@@ -67,6 +69,10 @@ export default function Home() {
         }
     }
 
+    const filteredMatters = matters.filter((matter) =>
+        matter.description.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
     useEffect(() => {
         connectToHardhat();
         //connectToWeb3();
@@ -74,7 +80,7 @@ export default function Home() {
     }, [account, contract]);
     return (
         <div className="min-h-screen bg-gray-500">
-            <Navbar />
+            <Navbar searchQuery={searchQuery} setSearchQuery={setSearchQuery} /> {/* Pass search props */}
             <div className="container mx-auto py-10">
                 <h1 className="text-4xl font-bold text-center mb-8 text-dark">Matters to Vote On</h1>
                 {loading ? (
@@ -83,7 +89,7 @@ export default function Home() {
                     <div className="text-red-500 text-center text-lg text-dark">{error}</div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                        {matters.map((matter) => (
+                        {filteredMatters.map((matter) => (
                             <div key={matter.id} className="p-6 rounded-lg shadow-lg transition-transform bg-gray-700 transform hover:scale-105">
                                 <h2 className="text-xl font-semibold text-dark">{matter.description}</h2>
                                 <p className="mt-2 text-dark">Proposals Count: {matter.proposalCount}</p>
