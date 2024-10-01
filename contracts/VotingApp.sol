@@ -34,6 +34,13 @@ contract VotingApp {
         admin = msg.sender;
         matters.push(Matter(0, "Initial matter", 0));
         matters.push(Matter(1, "Second matter", 0)); // Add a second matter for testing
+        matterProposals[1].push(Proposal(0, "Initial proposal", 0, 1)); // Add a proposal for the second matter
+        matters[1].proposalsCount++; // Increment the proposals count for the second matter
+        matterProposals[1].push(Proposal(1, "Second proposal", 0, 1)); // Add a second proposal for the second matter
+        matters[1].proposalsCount++; // Increment the proposals count for the second matter
+        matterProposals[1].push(Proposal(2, "Third proposal", 0, 1)); // Add a third proposal for the second matter
+        matters[1].proposalsCount++; // Increment the proposals count for the second matter
+
     }
 
     function registerVoter(address _voterAddress) public {

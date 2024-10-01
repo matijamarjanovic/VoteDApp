@@ -5,6 +5,7 @@ import Navbar from "@/app/components/Navbar";
 import { useEffect, useState } from "react";
 import { JsonRpcProvider } from 'ethers';
 import { getContractHardhat } from "../../utils/ethers";
+import {useWallet} from "@/context/WalletContext";
 
 class Matter {
     id: number;
@@ -20,35 +21,9 @@ class Matter {
 
 export default function Home() {
     const [matters, setMatters] = useState<Matter[]>([]);
-    const [account, setAccount] = useState<string | null>(null);
-    const [contract, setContract] = useState<any | null>(null);
-    const [loading, setLoading] = useState<boolean>(true);
-    const [error, setError] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState<string>(''); // New state for search query
+    const { account, loading, error, contract } = useWallet();
 
-
-    async function connectToHardhat() {
-        try {
-            // Create a JSON-RPC provider to connect to Hardhat node
-            const provider = new JsonRpcProvider('http://127.0.0.1:8545');
-
-            // Use a known Hardhat account (address 0) for testing
-            const hardhatAccount = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"; // Replace with one of Hardhat's default addresses
-
-            // Set the connected account
-            setAccount(hardhatAccount);
-            setContract(await getContractHardhat());
-
-
-            // Fetch matters after connecting
-            await fetchMatters();
-        } catch (error) {
-            console.error('Error connecting to Hardhat node:', error);
-            setError("Failed to connect to Hardhat node.");
-        } finally {
-            setLoading(false);
-        }
-    }
 
     async function fetchMatters() {
         if (contract) {
@@ -64,7 +39,6 @@ export default function Home() {
                 setMatters(fetchedMatters);
             } catch (error) {
                 console.error('Error fetching matters:', error);
-                setError("Failed to fetch matters.");
             }
         }
     }
@@ -74,10 +48,9 @@ export default function Home() {
     );
 
     useEffect(() => {
-        connectToHardhat();
-        //connectToWeb3();
-
+        fetchMatters();
     }, [account, contract]);
+
     return (
         <div className="min-h-screen bg-gray-500">
             <Navbar searchQuery={searchQuery} setSearchQuery={setSearchQuery} /> {/* Pass search props */}
