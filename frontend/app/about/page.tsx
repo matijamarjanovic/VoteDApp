@@ -7,7 +7,7 @@ const Page = () => {
     const [searchQuery, setSearchQuery] = useState(''); // Optional search bar in the navbar
 
     return (
-        <div className="min-h-screen bg-gray-500">
+        <div className="min-h-screen bg-gray-800">
             <Navbar searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
             <div className="container mx-auto py-10 px-4">
                 <h1 className="text-4xl font-bold text-center mb-8 text-dark">About the Voting App</h1>

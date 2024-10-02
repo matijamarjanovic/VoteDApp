@@ -60,9 +60,11 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({ children }) => {
         }
     };
 
+
     // Optionally, connect automatically on app load
     useEffect(() => {
         connectToHardhat();
+        //connectToMetaMask();
     }, []);
 
     return (

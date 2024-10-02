@@ -4,11 +4,13 @@ contract VotingApp {
 
     struct Voter {
         bool isRegistered;
+        mapping (uint => uint) hasVotedFor; //matterId => proposalId
         mapping (uint => bool) hasVoted; //matterId => hasVoted
     }
 
     struct Proposal {
         uint id;
+        string title;
         string description;
         uint voteCount;
         uint matterId;
@@ -34,12 +36,22 @@ contract VotingApp {
         admin = msg.sender;
         matters.push(Matter(0, "Initial matter", 0));
         matters.push(Matter(1, "Second matter", 0)); // Add a second matter for testing
-        matterProposals[1].push(Proposal(0, "Initial proposal", 0, 1)); // Add a proposal for the second matter
-        matters[1].proposalsCount++; // Increment the proposals count for the second matter
-        matterProposals[1].push(Proposal(1, "Second proposal", 0, 1)); // Add a second proposal for the second matter
-        matters[1].proposalsCount++; // Increment the proposals count for the second matter
-        matterProposals[1].push(Proposal(2, "Third proposal", 0, 1)); // Add a third proposal for the second matter
-        matters[1].proposalsCount++; // Increment the proposals count for the second matter
+
+        registerProposal(0, "description", "Initial proposal"); // Register a proposal for the initial matter
+        registerProposal(0, "description", "Second proposal"); // Register a second proposal for the initial matter
+        registerProposal(0, "description", "Third proposal"); // Register a third proposal for the initial matter
+
+        registerProposal(1, "description", "Initial proposal"); // Register a proposal for the initial matter
+        registerProposal(1, "description", "Second proposal"); // Register a second proposal for the initial matter
+        registerProposal(1, "description", "Third proposal"); // Register a third proposal for the initial matter
+
+        registerVoter(0x70997970C51812dc3A010C7d01b50e0d17dc79C8);
+        registerVoter(0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC);
+        registerVoter(0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65);
+
+        registerVoter(msg.sender); // Register the admin as a voter
+        vote(0, 0); // Vote on the first proposal
+        //vote(0, 1); // Vote on the second proposal
 
     }
 
@@ -58,13 +70,13 @@ contract VotingApp {
         matters.push(Matter(matters.length, _description, 0));
     }
 
-    function registerProposal(uint _matterId, string memory _description) public {
+    function registerProposal(uint _matterId, string memory _description, string memory _title) public {
         require(voters[msg.sender].isRegistered || msg.sender == admin, "Only registered voters can register a proposal");
         require(_matterId < matters.length, "Matter does not exist"); // Ensure the matter exists
 
-        Proposal memory newProposal = Proposal(matterProposals[_matterId].length, _description, 0, _matterId);
+        Proposal memory newProposal = Proposal(matterProposals[_matterId].length, _title, _description, 0, _matterId);
         matterProposals[_matterId].push(newProposal);
-        matters[_matterId].proposalsCount++;
+        matters[_matterId].proposalsCount++;  // Ensure proposalsCount is updated
         totalProposalCount++;
 
         emit ProposalRegistered(newProposal.id);
@@ -73,15 +85,33 @@ contract VotingApp {
 
     function vote(uint _matterId, uint _proposalId) public {
         require(voters[msg.sender].isRegistered, "Only registered voters can vote");
-        require(!voters[msg.sender].hasVoted[_matterId], "The voter has already voted on this matter");
 
-        voters[msg.sender].hasVoted[_matterId] = true;
+        uint currentProposalId = voters[msg.sender].hasVotedFor[_matterId];
 
-        matterProposals[_matterId][_proposalId].voteCount++;
-        totalProposalCount++;
+        if (voters[msg.sender].hasVoted[_matterId]) {
+
+            if (currentProposalId != _proposalId) {
+                matterProposals[_matterId][currentProposalId].voteCount--;
+                voters[msg.sender].hasVotedFor[_matterId] = _proposalId;
+                matterProposals[_matterId][_proposalId].voteCount++;
+
+            } else {
+                voters[msg.sender].hasVoted[_matterId] = false; // Mark as not voted
+                voters[msg.sender].hasVotedFor[_matterId] = 0; // Reset their vote reference
+                matterProposals[_matterId][currentProposalId].voteCount--; // Decrement the vote count
+            }
+
+        } else {
+
+            voters[msg.sender].hasVotedFor[_matterId] = _proposalId;
+            voters[msg.sender].hasVoted[_matterId] = true;
+            matterProposals[_matterId][_proposalId].voteCount++;
+        }
 
         emit Voted(msg.sender, _proposalId, _matterId);
     }
+
+
 
     function getWinningProposal(uint _matterId) public view returns (uint) {
         uint winningProposalId = 0;
@@ -112,7 +142,6 @@ contract VotingApp {
     function getMatterById(uint _matterId) public view returns (Matter memory) {
         return matters[_matterId];
     }
-
     function getProposalCount() public view returns (uint) {
         return totalProposalCount;
     }
