@@ -96,8 +96,8 @@ export default function MatterPage({ params }: MatterPageProps) {
             // Check if the error message includes a specific string
             if (err.message && err.message.includes('The voter has already voted on this matter')) {
                 alert('You have already voted on this proposal.'); // Alert the user
-            } else {
-                alert('An error occurred while voting.'); // General error message for other errors
+            } else if (err.message && err.message.includes('Only registered voters can vote')){
+                alert('Only registered voters can vote.'); // General error message for other errors
             }
         }
     };

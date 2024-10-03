@@ -5,7 +5,6 @@ import Navbar from "@/app/components/Navbar";
 import { useEffect, useState } from "react";
 import Link from 'next/link';  // Import Link component
 import { JsonRpcProvider } from 'ethers';
-import { getContractHardhat } from "../../utils/ethers";
 import {useWallet} from "@/context/WalletContext";
 
 class Matter {

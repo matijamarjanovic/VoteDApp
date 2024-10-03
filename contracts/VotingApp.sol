@@ -45,10 +45,6 @@ contract VotingApp {
         registerProposal(1, "description", "Second proposal"); // Register a second proposal for the initial matter
         registerProposal(1, "description", "Third proposal"); // Register a third proposal for the initial matter
 
-        registerVoter(0x70997970C51812dc3A010C7d01b50e0d17dc79C8);
-        registerVoter(0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC);
-        registerVoter(0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65);
-
         registerVoter(msg.sender); // Register the admin as a voter
         vote(0, 0); // Vote on the first proposal
         //vote(0, 1); // Vote on the second proposal
@@ -150,6 +146,8 @@ contract VotingApp {
         return matterProposals[_matterId][_proposalId].voteCount;
     }
 
-
+    function getAdmin() public view returns (address) {
+        return admin;
+    }
 
 }

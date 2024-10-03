@@ -2,8 +2,8 @@
 'use client'
 
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { JsonRpcProvider } from 'ethers';
-import { getContractHardhat } from '../../utils/ethers';
+import {ethers, JsonRpcProvider} from 'ethers';
+import ToDoListAbi from "../../artifacts/contracts/VotingApp.sol/VotingApp.json";
 
 interface WalletContextType {
     account: string | null;
@@ -12,10 +12,13 @@ interface WalletContextType {
     loading: boolean;
     error: string | null;
     connectToHardhat: () => Promise<void>;
+    isAdmin: boolean;
 }
 
 // Create the context
 const WalletContext = createContext<WalletContextType | undefined>(undefined);
+const CONTRACT_ADDRESS = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
+const ACCOUNT_NUMBER = 1;
 
 // Custom hook for accessing the wallet context
 export const useWallet = () => {
@@ -37,6 +40,8 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({ children }) => {
     const [contract, setContract] = useState<any | null>(null);
     const [loading, setLoading] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
+    const [isAdmin, setIsAdmin] = useState<boolean>(false);
+
 
     const connectToHardhat = async () => {
         setLoading(true);
@@ -45,13 +50,23 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({ children }) => {
             const provider = new JsonRpcProvider('http://127.0.0.1:8545');
             setProvider(provider);
 
-            // Hardhat account address (for testing)
-            const hardhatAccount = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
-            setAccount(hardhatAccount);
+            const accounts = await provider.listAccounts();
 
-            // Fetch the smart contract instance
-            const contract = await getContractHardhat();
+            // Check if any accounts are available
+            if (accounts.length === 0) {
+                throw new Error("No accounts found in Hardhat local node.");
+            }
+
+            // Use the first account as the signer
+            const signer = provider.getSigner(ACCOUNT_NUMBER);
+            const signerAddress = await (await signer).getAddress();
+            setAccount(signerAddress);
+
+            // Initialize the contract with ABI, address, and signer
+            const contract = new ethers.Contract(CONTRACT_ADDRESS, ToDoListAbi.abi, await signer);
             setContract(contract);
+
+
         } catch (error) {
             console.error('Error connecting to Hardhat node:', error);
             setError('Failed to connect to Hardhat node.');
@@ -60,15 +75,29 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({ children }) => {
         }
     };
 
+    const checkAdmin = async () => {
+        if (contract && account) { // Ensure both contract and account are ready
+            const adminAddress = await contract.getAdmin();
+            console.log("contract admin: ", adminAddress);
+            console.log("account: ", account);
 
-    // Optionally, connect automatically on app load
+            if (account === adminAddress) {
+                setIsAdmin(true);
+            } else {
+                setIsAdmin(false);
+            }
+        }
+    };
+
+
+
     useEffect(() => {
         connectToHardhat();
-        //connectToMetaMask();
-    }, []);
+        checkAdmin();
+    }, [account]);
 
     return (
-        <WalletContext.Provider value={{ account, contract, provider, loading, error, connectToHardhat }}>
+        <WalletContext.Provider value={{ account, contract, provider, loading, error, connectToHardhat, isAdmin }}>
             {children}
         </WalletContext.Provider>
     );
