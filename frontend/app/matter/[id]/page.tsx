@@ -36,6 +36,9 @@ export default function MatterPage({ params }: MatterPageProps) {
     const [expandedProposal, setExpandedProposal] = useState<number | null>(null); // For toggling description view
     const [winner, setWinner] = useState<Proposal | null>(null); // State for winning proposal
     const [isWinnerModalOpen, setIsWinnerModalOpen] = useState<boolean>(false); // Modal visibility state
+    const [isAddProposalModalOpen, setIsAddProposalModalOpen] = useState<boolean>(false); // Modal for adding proposal
+    const [newProposalTitle, setNewProposalTitle] = useState<string>(''); // New proposal title
+    const [newProposalDescription, setNewProposalDescription] = useState<string>(''); // New proposal description
 
 
     // Function to fetch matter details and proposals
@@ -78,6 +81,25 @@ export default function MatterPage({ params }: MatterPageProps) {
     const filteredProposals = proposals.filter((prop) =>
         prop.description.toLowerCase().includes(searchQuery.toLowerCase())
     );
+
+    const addNewProposal = async () => {
+        if (!contract || !newProposalTitle || !newProposalDescription) return;
+
+        try {
+            // Call the smart contract to add the proposal to the matter
+            await contract.registerProposal(id, newProposalDescription, newProposalTitle);
+            // After adding the proposal, fetch updated proposals
+            fetchMatterAndProposals();
+            setIsAddProposalModalOpen(false); // Close the modal after success
+            setNewProposalTitle(''); // Clear the inputs
+            setNewProposalDescription('');
+        } catch (error:any) {
+            console.error('Error adding proposal:', error);
+            if(error.message() && error.message().includes('Only registered voters can register a proposal')){
+                alert('Only registered voters can register a proposal');
+            }
+        }
+    };
 
     const toggleDescription = (proposalId: number) => {
         setExpandedProposal(expandedProposal === proposalId ? null : proposalId);
@@ -146,6 +168,12 @@ export default function MatterPage({ params }: MatterPageProps) {
                         >
                             Choose Winner
                         </button>
+                        <button
+                            onClick={() => setIsAddProposalModalOpen(true)}
+                            className="bg-green-500 text-white px-4 py-2 rounded mb-4 hover:bg-blue-600 transition duration-200 ml-4"
+                        >
+                            Add Proposal
+                        </button>
                     </div>
                 )}
 
@@ -213,6 +241,48 @@ export default function MatterPage({ params }: MatterPageProps) {
                                     className="bg-gray-600 text-yellow-500 px-4 py-2 rounded-lg hover:bg-gray-400 transition duration-200"
                                 >
                                     Close
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Add Proposal Modal */}
+                {isAddProposalModalOpen && (
+                    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+                        <div className="bg-gray-700 rounded-lg p-8 shadow-lg w-96">
+                            <h2 className="text-xl font-bold text-white mb-4">Add Proposal</h2>
+                            <div className="mb-4">
+                                <label className="block text-white mb-2">Title:</label>
+                                <input
+                                    type="text"
+                                    value={newProposalTitle}
+                                    onChange={(e) => setNewProposalTitle(e.target.value)}
+                                    className="w-full px-4 py-2 text-black rounded-lg"
+                                    placeholder="Enter proposal title"
+                                />
+                            </div>
+                            <div className="mb-4">
+                                <label className="block text-white mb-2">Description:</label>
+                                <textarea
+                                    value={newProposalDescription}
+                                    onChange={(e) => setNewProposalDescription(e.target.value)}
+                                    className="w-full px-4 py-2 text-black rounded-lg"
+                                    placeholder="Enter proposal description"
+                                />
+                            </div>
+                            <div className="flex justify-end">
+                                <button
+                                    onClick={addNewProposal}
+                                    className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition duration-200"
+                                >
+                                    Submit
+                                </button>
+                                <button
+                                    onClick={() => setIsAddProposalModalOpen(false)}
+                                    className="bg-gray-500 text-white px-4 py-2 rounded-lg ml-4 hover:bg-gray-600 transition duration-200"
+                                >
+                                    Cancel
                                 </button>
                             </div>
                         </div>
