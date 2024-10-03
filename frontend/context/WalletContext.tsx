@@ -18,7 +18,7 @@ interface WalletContextType {
 // Create the context
 const WalletContext = createContext<WalletContextType | undefined>(undefined);
 const CONTRACT_ADDRESS = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
-const ACCOUNT_NUMBER = 1;
+const ACCOUNT_NUMBER = 0;
 
 // Custom hook for accessing the wallet context
 export const useWallet = () => {
