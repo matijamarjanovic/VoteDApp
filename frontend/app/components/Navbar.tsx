@@ -58,7 +58,9 @@ const Navbar: React.FC<NavbarProps> = ({ searchQuery, setSearchQuery }) => {
     return (
         <nav className="bg-gray-700 p-4">
             <div className="container mx-auto flex justify-between items-center">
-                <div className="text-white text-lg font-bold">Voting App</div>
+                <Link href="/">
+                    <div className="text-white text-lg font-bold">Voting App</div>
+                </Link>
                 <div className="space-x-4">
                     <Link href="/">
                         <span className="text-gray-300 hover:text-white cursor-pointer">Home</span>
@@ -77,7 +79,7 @@ const Navbar: React.FC<NavbarProps> = ({ searchQuery, setSearchQuery }) => {
                     {isAdmin && (
                         <button
                             onClick={handleRegisterVoter}
-                            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-200"
+                            className="bg-gray-800 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-200"
                         >
                             Register Voter
                         </button>

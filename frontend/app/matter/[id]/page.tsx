@@ -34,6 +34,8 @@ export default function MatterPage({ params }: MatterPageProps) {
     const [errorFetching, setErrorFetching] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState<string>(''); // New state for search query
     const [expandedProposal, setExpandedProposal] = useState<number | null>(null); // For toggling description view
+    const [winner, setWinner] = useState<Proposal | null>(null); // State for winning proposal
+    const [isWinnerModalOpen, setIsWinnerModalOpen] = useState<boolean>(false); // Modal visibility state
 
 
     // Function to fetch matter details and proposals
@@ -102,6 +104,19 @@ export default function MatterPage({ params }: MatterPageProps) {
         }
     };
 
+    const chooseWinner = async () => {
+        if (!contract || !id) return;
+
+        try {
+            const winningProposalId = await contract.getWinningProposal(id); // Call the smart contract function
+            const winningProposal = proposals.find(proposal => proposal.id === winningProposalId);
+            setWinner(winningProposal || null); // Set the winner
+            setIsWinnerModalOpen(true); // Open modal
+        } catch (error) {
+            console.error('Error choosing winner:', error);
+        }
+    };
+
     useEffect(() => {
         if (contract && id) {
             fetchMatterAndProposals();
@@ -125,7 +140,12 @@ export default function MatterPage({ params }: MatterPageProps) {
                 {matter && (
                     <div className="mb-8">
                         <h1 className="text-4xl font-bold mb-4">{matter.description}</h1>
-                        <p className="text-lg">Proposals for this matter: </p>
+                        <button
+                            onClick={chooseWinner}
+                            className="bg-yellow-500 text-gray-600 px-4 py-2 rounded mb-4 hover:bg-green-600 transition duration-200 ml-4"
+                        >
+                            Choose Winner
+                        </button>
                     </div>
                 )}
 
@@ -176,6 +196,27 @@ export default function MatterPage({ params }: MatterPageProps) {
                     ))
                 ) : (
                     <p className="text-center text-lg">No proposals available for this matter.</p>
+                )}
+
+                {/* Winner Modal */}
+                {isWinnerModalOpen && winner && (
+                    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+                        <div className="bg-gray-700 rounded-lg p-8 shadow-lg w-96">
+                            <h2 className="text-xl font-bold text-yellow-500 mb-4">Winning Proposal</h2>
+                            <p className="text-lg text-yellow-500 font-bold">Title: {winner.title}</p>
+                            <p className="text-yellow-500 font-semibold">Votes: {winner.votesCount.toString()}</p>
+                            <p className="text-yellow-500 font-semibold">Description:</p>
+                            <p className="text-yellow-500">{winner.description}</p>
+                            <div className="flex justify-end mt-4">
+                                <button
+                                    onClick={() => setIsWinnerModalOpen(false)} // Close modal
+                                    className="bg-gray-600 text-yellow-500 px-4 py-2 rounded-lg hover:bg-gray-400 transition duration-200"
+                                >
+                                    Close
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 )}
             </div>
         </div>
